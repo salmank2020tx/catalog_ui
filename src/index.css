@@ -1,0 +1,44 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --forest-900: #12321c;
+    --forest-800: #173f22;
+    --forest-700: #1d4b29;
+    --forest-600: #276334;
+    --forest-500: #2f7a3f;
+    --lime-400: #8fd35a;
+    --amber-500: #e7a63c;
+    --red-500: #dc4b4b;
+    --ink-900: #14181a;
+    --ink-600: #5b6570;
+    --ink-400: #8a949e;
+    --paper: #f4f6f4;
+  }
+  body {
+    background: var(--paper);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-thumb { background: #c9d1c9; border-radius: 8px; }
+}
+
+@layer utilities {
+  @keyframes pulseIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .anim-in {
+    animation: pulseIn 0.25s ease-out;
+  }
+  @keyframes barGrow {
+    from { width: 0; }
+  }
+  .bar-grow {
+    animation: barGrow 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+}

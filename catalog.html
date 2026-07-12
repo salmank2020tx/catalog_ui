@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Product Information Management Tool</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --forest-900:#12321c;
+    --forest-800:#173f22;
+    --forest-700:#1d4b29;
+    --forest-600:#276334;
+    --forest-500:#2f7a3f;
+    --lime-400:#8fd35a;
+    --amber-500:#e7a63c;
+    --red-500:#dc4b4b;
+    --ink-900:#14181a;
+    --ink-600:#5b6570;
+    --ink-400:#8a949e;
+    --paper:#f4f6f4;
+  }
+  *{font-family:'Inter',system-ui,-apple-system,sans-serif;}
+  body{background:var(--paper); margin:0;}
+  ::-webkit-scrollbar{width:8px; height:8px;}
+  ::-webkit-scrollbar-thumb{background:#c9d1c9; border-radius:8px;}
+  .glow-dot{box-shadow:0 0 0 3px rgba(143,211,90,0.25);}
+  @keyframes pulseIn{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);}}
+  .anim-in{animation:pulseIn .25s ease-out;}
+  @keyframes barGrow{from{width:0;}}
+  .bar-grow{animation:barGrow .6s cubic-bezier(.2,.8,.2,1);}
+</style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef, useMemo } = React;
+
+    /* ============================== MOCK DATA ============================== */
+
+    const mockProducts = [
+      { id: 1, name: 'Castrol EDGE 5W-30 Advanced Full Synthetic Motor Oil, 5 Quarts', product_key: 'CAS-EDG-5W30-5Q', brand: 'Castrol' },
+      { id: 2, name: 'Castrol GTX 15W-40 Diesel Engine Oil, 5L', product_key: 'CAS-GTX-15W40-5L', brand: 'Castrol' },
+      { id: 3, name: 'Castrol MAGNATEC 5W-30 C3 Full Synthetic', product_key: 'CAS-MAG-5W30-C3', brand: 'Castrol' },
+      { id: 4, name: 'Castrol GTX HIGH MILEAGE 10W-40, 5 Quarts', product_key: 'CAS-GTX-HM-10W40-5Q', brand: 'Castrol' },
+    ];
+
+    const FIELD_META = {
+      item_name:      { label: 'Item Name',      group: 'product_details', wide: true },
+      brand_name:     { label: 'Brand Name',     group: 'product_details' },
+      pack_size:      { label: 'Pack Size',      group: 'product_details' },
+      sku:            { label: 'SKU',            group: 'product_details' },
+      material_type:  { label: 'Material Type',  group: 'product_details' },
+      viscosity_grade:{ label: 'Viscosity Grade',group: 'product_details' },
+      application:    { label: 'Application',    group: 'product_details' },
+      acea_spec:      { label: 'ACEA Spec',      group: 'product_details' },
+      supplier_name:  { label: 'Supplier Name',  group: 'supplier_description', wide: true },
+      supplier_id:    { label: 'Supplier ID',    group: 'supplier_description' },
+      offer_price:    { label: 'List Price',     group: 'offer' },
+      offer_currency: { label: 'Currency',       group: 'offer' },
+      offer_moq:      { label: 'Minimum Order Qty', group: 'offer' },
+      flash_point:    { label: 'Flash Point',    group: 'safety_compliance' },
+      hazard_class:   { label: 'Hazard Class',   group: 'safety_compliance' },
+    };
+
+    const initialFieldValues = {
+      item_name:       { value: 'Castrol EDGE 5W-30 Advanced Full Synthetic Motor Oil', confidence: 0.99, state: 'sourced', source: 'fusion', sourceLabel: 'Fusion — Product Master' },
+      brand_name:       { value: 'Castrol', confidence: 0.98, state: 'sourced', source: 'fusion', sourceLabel: 'Fusion — Product Master' },
+      pack_size:        { value: '5 Quarts', confidence: 0.97, state: 'sourced', source: 'fusion', sourceLabel: 'Fusion — Product Master' },
+      sku:              { value: 'CAS-EDG-5W30-5Q', confidence: 0.95, state: 'sourced', source: 'fusion', sourceLabel: 'Fusion — Product Master' },
+      material_type:    { value: 'Engine Oil', confidence: 0.88, state: 'sourced', source: 'pds', sourceLabel: 'PDS — Product Data Sheet (p.1)' },
+      viscosity_grade:  { value: '', confidence: 0, state: 'needs_review', source: null, sourceLabel: null },
+      application:      { value: 'Passenger car diesel', confidence: 0.96, state: 'sourced', source: 'pds', sourceLabel: 'PDS — Product Data Sheet (p.2)' },
+      acea_spec:        { value: 'C2', confidence: 0.96, state: 'sourced', source: 'pds', sourceLabel: 'PDS — Product Data Sheet (p.2)' },
+      supplier_name:    { value: 'Castrol Ltd.', confidence: 0.97, state: 'sourced', source: 'smarchy', sourceLabel: 'Smarchy — Supplier Registry' },
+      supplier_id:      { value: 'SUP-00214', confidence: 0.94, state: 'sourced', source: 'smarchy', sourceLabel: 'Smarchy — Supplier Registry' },
+      offer_price:      { value: '38.99', confidence: 0.92, state: 'sourced', source: 'fusion', sourceLabel: 'Fusion — Pricing' },
+      offer_currency:   { value: 'USD', confidence: 0.99, state: 'sourced', source: 'fusion', sourceLabel: 'Fusion — Pricing' },
+      offer_moq:        { value: '1', confidence: 0.9, state: 'sourced', source: 'fusion', sourceLabel: 'Fusion — Pricing' },
+      flash_point:      { value: '210°C (COC)', confidence: 0.93, state: 'sourced', source: 'msds', sourceLabel: 'MSDS — Section 9' },
+      hazard_class:      { value: 'Not classified as hazardous', confidence: 0.91, state: 'sourced', source: 'msds', sourceLabel: 'MSDS — Section 2' },
+    };
+
+    const CATEGORY_DEFS = [
+      { key: 'supplier_description', name: 'Supplier Description' },
+      { key: 'product_identity',     name: 'Product Identity' },
+      { key: 'product_details',      name: 'Product Details' },
+      { key: 'offer',                name: 'Offer' },
+      { key: 'safety_compliance',    name: 'Safety & Compliance' },
+    ];
+
+    // Category-level counters shown in the sidebar/header are the count of
+    // ALL fields mapped for that category in the active template — most are
+    // resolved upstream (Fusion/Smarchy) and aren't all rendered as editable
+    // cards here. Only the fields genuinely needing attention (or that are
+    // wired into this demo) render as cards; the rest roll up into these
+    // static per-category totals, matching the template's real field count.
+    const CATEGORY_STATS = {
+      supplier_description: { total: 2,  populated: 2,  review: 0 },
+      product_identity:     { total: 13, populated: 13, review: 0 },
+      product_details:      { total: 27, populated: 26, review: 1 },
+      offer:                { total: 3,  populated: 3,  review: 0 },
+      safety_compliance:    { total: 8,  populated: 8,  review: 0 },
+    };
+    const FOOTER_BASELINE_POPULATED = 53;
+
+    const SUGGESTIONS = {
+      viscosity_grade: [
+        { value: '5W-30', confidence: 0.96, label: 'Recommended', tone: 'good' },
+        { value: '5W-40', confidence: 0.38, label: 'Possible', tone: 'warn' },
+        { value: '0W-30', confidence: 0.19, label: 'Unlikely', tone: 'bad' },
+      ],
+    };
+
+    const TOTAL_FIELDS_IN_TEMPLATE = 145;
+
+    /* ============================== HELPERS ============================== */
+
+    function confidenceTier(score) {
+      if (score === undefined || score === null) return 'none';
+      if (score >= 0.9) return 'high';
+      if (score >= 0.7) return 'medium';
+      return 'low';
+    }
+
+    const TIER_STYLE = {
+      high:   { bg: 'bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-500', ring: 'ring-emerald-200' },
+      medium: { bg: 'bg-amber-50',   text: 'text-amber-700',   dot: 'bg-amber-500',   ring: 'ring-amber-200' },
+      low:    { bg: 'bg-red-50',     text: 'text-red-700',     dot: 'bg-red-500',     ring: 'ring-red-200' },
+      none:   { bg: 'bg-gray-50',    text: 'text-gray-400',    dot: 'bg-gray-300',    ring: 'ring-gray-200' },
+    };
+
+    /* ============================== ATOMS ============================== */
+
+    const ConfidenceBadge = ({ score }) => {
+      const tier = confidenceTier(score);
+      const s = TIER_STYLE[tier];
+      if (tier === 'none') return <span className="text-xs text-gray-300 font-medium">—</span>;
+      return (
+        <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${s.bg} ${s.text} ring-1 ${s.ring}`}>
+          <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />
+          {Math.round(score * 100)}%
+        </span>
+      );
+    };
+
+    const Button = ({ children, variant = 'primary', onClick, disabled, loading, className = '', size='md' }) => {
+      const sizes = { sm: 'px-3 py-1.5 text-xs', md: 'px-4 py-2.5 text-sm' };
+      const base = `inline-flex items-center justify-center gap-2 font-semibold rounded-lg transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-40 disabled:pointer-events-none ${sizes[size]}`;
+      const variants = {
+        primary:   'bg-[var(--forest-600)] text-white hover:bg-[var(--forest-700)] focus:ring-[var(--forest-500)] shadow-sm',
+        secondary: 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 focus:ring-gray-300',
+        outline:   'border border-[var(--forest-600)] text-[var(--forest-700)] bg-white hover:bg-[var(--forest-600)]/5 focus:ring-[var(--forest-500)]',
+        ghost:     'text-gray-500 hover:bg-gray-100 focus:ring-gray-300',
+      };
+      return (
+        <button className={`${base} ${variants[variant]} ${className}`} onClick={onClick} disabled={disabled || loading}>
+          {loading && <svg className="animate-spin h-4 w-4 text-current" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 100 8v4a8 8 0 01-8-8z"/></svg>}
+          {children}
+        </button>
+      );
+    };
+
+    const CheckIcon = ({ className }) => (
+      <svg className={className} viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-7.4 7.4a1 1 0 01-1.4 0L3.3 9.5a1 1 0 111.4-1.4l3.9 3.9 6.7-6.7a1 1 0 011.4 0z" clipRule="evenodd"/></svg>
+    );
+    const AlertIcon = ({ className }) => (
+      <svg className={className} viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M8.3 3.3a2 2 0 013.4 0l6.4 11a2 2 0 01-1.7 3H3.6a2 2 0 01-1.7-3l6.4-11zM10 7a1 1 0 00-1 1v3a1 1 0 002 0V8a1 1 0 00-1-1zm0 7.25a1 1 0 100 2 1 1 0 000-2z" clipRule="evenodd"/></svg>
+    );
+    const LinkIcon = ({ className }) => (
+      <svg className={className} viewBox="0 0 20 20" fill="currentColor"><path d="M12.2 6.8a3 3 0 010 4.24l-2.83 2.83a3 3 0 01-4.24-4.24l1.06-1.06a1 1 0 111.42 1.42L6.55 10.1a1 1 0 001.41 1.41l2.83-2.82a1 1 0 000-1.42 1 1 0 011.41-1.42z"/><path d="M7.8 13.2a3 3 0 010-4.24l2.83-2.83a3 3 0 014.24 4.24l-1.06 1.06a1 1 0 11-1.42-1.42l1.06-1.06a1 1 0 00-1.41-1.41l-2.83 2.82a1 1 0 000 1.42 1 1 0 01-1.41 1.42z"/></svg>
+    );
+    const SparkIcon = ({ className }) => (
+      <svg className={className} viewBox="0 0 20 20" fill="currentColor"><path d="M10 2l1.5 4.5L16 8l-4.5 1.5L10 14l-1.5-4.5L4 8l4.5-1.5z"/><path d="M16 13l.6 1.8L18.4 15.4 16.6 16 16 17.8 15.4 16 13.6 15.4 15.4 14.8z" opacity="0.7"/></svg>
+    );
+
+    /* ============================== HEADER ============================== */
+
+    const Header = ({ query, onQueryChange, results, showResults, onSelect, onFocus, searchRef }) => (
+      <header className="sticky top-0 z-30" style={{background: `linear-gradient(135deg, var(--forest-900), var(--forest-700))`}}>
+        <div className="max-w-[1400px] mx-auto px-6 py-4 flex items-center gap-6">
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-[var(--lime-400)] flex items-center justify-center shadow-sm">
+              <SparkIcon className="w-5 h-5 text-[var(--forest-900)]" />
+            </div>
+            <div>
+              <div className="text-white font-bold text-[15px] leading-tight tracking-tight">Product Information<br/>Management Tool</div>
+              <div className="text-[11px] text-[var(--lime-400)]/90 font-medium mt-0.5">User Journey · Create New Listing</div>
+            </div>
+          </div>
+
+          <div className="flex-1 relative" ref={searchRef}>
+            <div className="relative">
+              <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z"/></svg>
+              <input
+                value={query}
+                onChange={(e) => onQueryChange(e.target.value)}
+                onFocus={onFocus}
+                placeholder="Search product name, SKU, or model number..."
+                className="w-full bg-white rounded-lg pl-11 pr-4 py-2.5 text-sm text-gray-800 placeholder-gray-400 outline-none ring-0 focus:ring-2 focus:ring-[var(--lime-400)] shadow-sm"
+              />
+            </div>
+            {showResults && results.length > 0 && (
+              <ul className="absolute z-40 w-full mt-1.5 bg-white border border-gray-200 rounded-lg shadow-xl max-h-72 overflow-auto anim-in">
+                {results.map(p => (
+                  <li key={p.id} onClick={() => onSelect(p)} className="px-4 py-3 hover:bg-emerald-50 cursor-pointer flex items-center justify-between border-b border-gray-100 last:border-0">
+                    <div>
+                      <div className="text-sm font-medium text-gray-800">{p.name}</div>
+                      <div className="text-xs text-gray-400 mt-0.5">{p.brand}</div>
+                    </div>
+                    <span className="text-xs font-mono text-gray-400">{p.product_key}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="w-9 h-9 rounded-full bg-white/15 flex items-center justify-center text-white font-semibold text-sm">A</div>
+            <div className="hidden sm:block text-right">
+              <div className="text-white text-sm font-semibold leading-tight">Alice</div>
+              <div className="text-[11px] text-white/60 leading-tight">Catalog Ops</div>
+            </div>
+          </div>
+        </div>
+      </header>
+    );
+
+    /* ============================== HOME / SEARCH LANDING ============================== */
+
+    const Home = ({ query, onQueryChange, results, showResults, onSelect, onFocus, searchRef, onViewDemo }) => (
+      <div>
+        <Header query={query} onQueryChange={onQueryChange} results={results} showResults={showResults} onSelect={onSelect} onFocus={onFocus} searchRef={searchRef} />
+        <div className="min-h-[70vh] flex flex-col items-center justify-center px-6">
+          <div className="max-w-xl w-full text-center">
+            <div className="w-14 h-14 rounded-2xl bg-[var(--forest-700)] mx-auto flex items-center justify-center mb-5 shadow-lg">
+              <SparkIcon className="w-7 h-7 text-[var(--lime-400)]" />
+            </div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2 tracking-tight">Create a new product listing</h1>
+            <p className="text-gray-500 mb-8">Search for a product above, or try the guided demo to see the AI auto-population flow.</p>
+            <Button onClick={onViewDemo} className="mx-auto">View Demo Listing →</Button>
+            <p className="mt-4 text-xs text-gray-400">Try typing "Castrol" in the search bar above</p>
+          </div>
+        </div>
+      </div>
+    );
+
+    /* ============================== CATEGORY SIDEBAR ============================== */
+
+    const CategoryRow = ({ cat, active, onClick }) => {
+      const isReview = cat.reviewCount > 0;
+      return (
+        <button
+          onClick={onClick}
+          className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors border ${
+            active ? 'bg-emerald-50 border-emerald-200' : isReview ? 'bg-amber-50/60 border-amber-200' : 'bg-white border-transparent hover:bg-gray-50'
+          }`}
+        >
+          <span className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${
+            isReview ? 'bg-amber-100 text-amber-600' : 'bg-emerald-100 text-emerald-600'
+          }`}>
+            {isReview ? <AlertIcon className="w-3.5 h-3.5" /> : <CheckIcon className="w-3.5 h-3.5" />}
+          </span>
+          <span className="flex-1 min-w-0">
+            <div className={`text-sm font-semibold truncate ${active ? 'text-emerald-900' : 'text-gray-700'}`}>{cat.name}</div>
+            <div className="text-xs text-gray-400 mt-0.5">
+              {isReview ? `${cat.total} · ${cat.reviewCount} review` : `${cat.populated} populated`}
+            </div>
+          </span>
+        </button>
+      );
+    };
+
+    /* ============================== FIELD CARD ============================== */
+
+    const FieldCard = ({ fieldKey, meta, data, onUpdate, onOpenSuggestions, active }) => {
+      const [editing, setEditing] = useState(false);
+      const [draft, setDraft] = useState(data.value || '');
+      const needsReview = data.state === 'needs_review';
+
+      useEffect(() => { setDraft(data.value || ''); }, [data.value]);
+
+      const commit = () => { onUpdate(fieldKey, draft); setEditing(false); };
+
+      // Fixed-height single row for every state (populated / editing / needs-review)
+      // so cards in the same grid row always line up — this is what was causing the
+      // ragged bottoms before (some cards had an extra source line, some didn't).
+      return (
+        <div className={`${meta.wide ? 'sm:col-span-2' : ''}`}>
+          <div className="text-[11px] font-bold tracking-wide text-gray-400 uppercase mb-1.5 flex items-center gap-2">
+            {meta.label}
+            {active && <span className="text-emerald-600 normal-case font-semibold">· selected</span>}
+          </div>
+          <div className={`h-[52px] rounded-lg border flex items-center px-3.5 gap-2 transition-colors ${
+            needsReview ? 'border-red-300 bg-red-50/60' : 'border-gray-200 bg-white hover:border-emerald-300'
+          }`}>
+            {editing ? (
+              <>
+                <input
+                  autoFocus
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && commit()}
+                  className="flex-1 min-w-0 text-sm text-gray-900 outline-none border-b border-emerald-400 pb-0.5 bg-transparent"
+                />
+                <button onClick={commit} className="text-xs font-semibold text-emerald-700 hover:text-emerald-800 shrink-0">Save</button>
+                <button onClick={() => { setEditing(false); setDraft(data.value || ''); }} className="text-xs text-gray-400 hover:text-gray-600 shrink-0">Cancel</button>
+              </>
+            ) : needsReview ? (
+              <button onClick={onOpenSuggestions} className="flex-1 flex items-center justify-between text-left group min-w-0">
+                <span className="flex items-center gap-2 text-sm font-medium text-red-600 min-w-0">
+                  <AlertIcon className="w-4 h-4 shrink-0" />
+                  <span className="truncate">Not found in source files — choose a suggestion</span>
+                </span>
+                <span className="text-red-400 group-hover:translate-x-0.5 transition-transform shrink-0 ml-2">→</span>
+              </button>
+            ) : (
+              <>
+                <span className="flex-1 min-w-0 text-sm text-gray-900 truncate" title={data.value}>{data.value}</span>
+                <ConfidenceBadge score={data.confidence} />
+                {data.sourceLabel && (
+                  <span className="text-gray-300 hover:text-gray-500 transition-colors shrink-0 cursor-help" title={`Source: ${data.sourceLabel}`}>
+                    <LinkIcon className="w-3.5 h-3.5" />
+                  </span>
+                )}
+                <button onClick={() => setEditing(true)} className="text-gray-300 hover:text-emerald-600 transition-colors shrink-0" title="Edit">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.5-9.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 8.5-8.5z"/></svg>
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      );
+    };
+
+    /* ============================== SMART SUGGESTIONS PANEL ============================== */
+
+    const SuggestionRow = ({ s, onApply }) => {
+      const toneStyle = {
+        good: { badge: 'bg-emerald-100 text-emerald-700', bar: 'bg-emerald-500' },
+        warn: { badge: 'bg-amber-100 text-amber-700', bar: 'bg-amber-500' },
+        bad:  { badge: 'bg-red-100 text-red-700', bar: 'bg-red-500' },
+      }[s.tone];
+      return (
+        <div
+          onClick={() => onApply(s.value)}
+          className="rounded-lg border border-gray-200 p-3.5 cursor-pointer hover:border-emerald-300 hover:shadow-sm transition-all bg-white"
+        >
+          <div className="flex items-center justify-between mb-2">
+            <span className="font-bold text-gray-800 text-sm">{s.value}</span>
+            <span className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full ${toneStyle.badge}`}>{s.label}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="flex-1 h-1.5 rounded-full bg-gray-100 overflow-hidden">
+              <div className={`h-full rounded-full ${toneStyle.bar} bar-grow`} style={{ width: `${s.confidence * 100}%` }} />
+            </div>
+            <span className="text-xs font-semibold text-gray-500 w-9 text-right">{Math.round(s.confidence * 100)}%</span>
+          </div>
+        </div>
+      );
+    };
+
+    const SmartSuggestionsPanel = ({ fieldKey, fieldLabel, onApply }) => {
+      const suggestions = fieldKey ? SUGGESTIONS[fieldKey] : null;
+      const top = suggestions ? suggestions[0] : null;
+
+      return (
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden sticky top-24">
+          <div className="px-5 py-4" style={{background: `linear-gradient(135deg, var(--forest-800), var(--forest-600))`}}>
+            <div className="flex items-center gap-2 text-white font-bold text-sm">
+              <SparkIcon className="w-4 h-4 text-[var(--lime-400)]" />
+              Smart Suggestions
+            </div>
+            <div className="text-[12px] text-white/70 mt-0.5">
+              {fieldLabel ? `for ${fieldLabel}` : 'Select a field needing review'}
+            </div>
+          </div>
+
+          <div className="p-4 space-y-3">
+            {suggestions ? (
+              suggestions.map((s, i) => <SuggestionRow key={i} s={s} onApply={onApply} />)
+            ) : (
+              <div className="text-center py-8 text-gray-400 text-sm">
+                All fields in this category are resolved.
+              </div>
+            )}
+          </div>
+
+          {top && (
+            <div className="px-4 pb-4">
+              <Button variant="primary" className="w-full justify-center" onClick={() => onApply(top.value)}>
+                Apply '{top.value}' → field resolved
+              </Button>
+            </div>
+          )}
+
+          <div className="border-t border-gray-100 px-5 py-4">
+            <div className="text-[11px] font-bold text-gray-400 uppercase tracking-wide mb-2.5">Confidence</div>
+            <div className="flex items-center justify-between text-[11px] text-gray-500">
+              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-500"/>High ≥ 90%</span>
+              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-amber-500"/>Medium</span>
+              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-red-500"/>Low / blank</span>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    /* ============================== PROGRESS FOOTER ============================== */
+
+    const ProgressFooter = ({ populated, reviewCount, onPublish, onSaveDraft, publishing, canPublish }) => {
+      const pct = Math.round((populated / TOTAL_FIELDS_IN_TEMPLATE) * 100);
+      return (
+        <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-3.5 shadow-[0_-4px_16px_rgba(0,0,0,0.04)]">
+          <div className="max-w-[1400px] mx-auto flex items-center justify-between gap-6 flex-wrap">
+            <div className="flex items-center gap-4 flex-wrap">
+              <div>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-semibold text-gray-700">{populated} of {TOTAL_FIELDS_IN_TEMPLATE} fields auto-populated</span>
+                  <div className="w-48 h-2 rounded-full bg-gray-100 overflow-hidden">
+                    <div className="h-full rounded-full bg-[var(--forest-600)] bar-grow" style={{ width: `${pct}%` }} />
+                  </div>
+                </div>
+                <div className="text-[11px] text-gray-400 italic mt-1">Remaining fields are optional or pending source data</div>
+              </div>
+              {reviewCount > 0 ? (
+                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full">
+                  <AlertIcon className="w-3.5 h-3.5" /> {reviewCount} field{reviewCount !== 1 ? 's' : ''} need{reviewCount === 1 ? 's' : ''} review
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">
+                  <CheckIcon className="w-3.5 h-3.5" /> All fields resolved
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-3">
+              <Button variant="secondary" onClick={onSaveDraft}>Save Draft</Button>
+              <Button variant="primary" onClick={onPublish} disabled={!canPublish} loading={publishing} size="md">
+                {publishing ? 'Publishing…' : 'Publish Listing'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    /* ============================== LISTING PAGE ============================== */
+
+    const ListingPage = ({ product, onBack, query, onQueryChange, results, showResults, onSelect, onFocus, searchRef }) => {
+      const [fieldValues, setFieldValues] = useState(initialFieldValues);
+      const [activeCategory, setActiveCategory] = useState('product_details');
+      const [activeField, setActiveField] = useState('viscosity_grade');
+      const [publishing, setPublishing] = useState(false);
+      const [toast, setToast] = useState(null);
+
+      // Category totals/populated come from the template's real field count
+      // (CATEGORY_STATS — most fields resolve upstream and aren't all shown
+      // as cards here). reviewCount stays live: it's derived from whichever
+      // of the *displayed* cards are currently unresolved, so resolving the
+      // Viscosity Grade suggestion immediately moves the category (and the
+      // footer) from "needs review" to fully populated.
+      const categories = useMemo(() => {
+        return CATEGORY_DEFS.map(cat => {
+          const fieldsInCat = Object.entries(FIELD_META).filter(([, m]) => m.group === cat.key);
+          const stats = CATEGORY_STATS[cat.key] || { total: fieldsInCat.length, populated: fieldsInCat.length, review: 0 };
+          const reviewCount = fieldsInCat.filter(([k]) => fieldValues[k]?.state === 'needs_review').length;
+          const resolvedDelta = stats.review - reviewCount;
+          return {
+            ...cat,
+            total: stats.total,
+            populated: stats.populated + resolvedDelta,
+            reviewCount,
+            fieldKeys: fieldsInCat.map(([k]) => k),
+          };
+        });
+      }, [fieldValues]);
+
+      const currentCat = categories.find(c => c.key === activeCategory);
+      // Global footer mirrors the template's real 145-field count, seeded at
+      // the same baseline as the sidebar (53 populated), and moves in lockstep
+      // as review items on screen get resolved.
+      const totalReview = Object.values(fieldValues).filter(f => f.state === 'needs_review').length;
+      const baselineReview = Object.values(initialFieldValues).filter(f => f.state === 'needs_review').length;
+      const totalPopulated = FOOTER_BASELINE_POPULATED + (baselineReview - totalReview);
+
+      const handleUpdate = (key, value) => {
+        setFieldValues(prev => ({
+          ...prev,
+          [key]: { ...prev[key], value, confidence: 0.99, state: 'manual', source: null, sourceLabel: 'Manually edited' },
+        }));
+      };
+
+      const handleApplySuggestion = (value) => {
+        if (!activeField) return;
+        setFieldValues(prev => ({
+          ...prev,
+          [activeField]: { ...prev[activeField], value, confidence: SUGGESTIONS[activeField]?.[0]?.confidence ?? 0.9, state: 'sourced', source: 'derived', sourceLabel: 'AI Smart Suggestion' },
+        }));
+      };
+
+      const handlePublish = () => {
+        setPublishing(true);
+        setTimeout(() => {
+          setPublishing(false);
+          setToast('Listing published successfully!');
+          setTimeout(() => setToast(null), 2500);
+        }, 1200);
+      };
+
+      const handleSaveDraft = () => {
+        setToast('Draft saved.');
+        setTimeout(() => setToast(null), 2000);
+      };
+
+      return (
+        <div className="min-h-screen flex flex-col">
+          <Header query={query} onQueryChange={onQueryChange} results={results} showResults={showResults} onSelect={onSelect} onFocus={onFocus} searchRef={searchRef} />
+
+          <div className="max-w-[1400px] w-full mx-auto px-6 pt-5 pb-3 flex items-center justify-between">
+            <button onClick={onBack} className="text-sm text-gray-500 hover:text-gray-800 flex items-center gap-1.5 font-medium">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7"/></svg>
+              Back to Search
+            </button>
+            <div className="text-right">
+              <div className="text-xs text-gray-400">Draft · Auto-saved just now</div>
+            </div>
+          </div>
+
+          <div className="max-w-[1400px] w-full mx-auto px-6 pb-4">
+            <h1 className="text-xl font-bold text-gray-900">{product.name}</h1>
+            <p className="text-sm text-gray-400 mt-0.5">SKU: <span className="font-mono">{product.product_key}</span> · Brand: {product.brand}</p>
+          </div>
+
+          <div className="flex-1 max-w-[1400px] w-full mx-auto px-6 grid grid-cols-1 lg:grid-cols-[260px_1fr_320px] gap-5 pb-6">
+            {/* Sidebar */}
+            <aside>
+              <div className="text-[11px] font-bold tracking-wide text-gray-400 uppercase mb-2 px-1">Categories</div>
+              <div className="space-y-2">
+                {categories.map(cat => (
+                  <CategoryRow key={cat.key} cat={cat} active={cat.key === activeCategory} onClick={() => setActiveCategory(cat.key)} />
+                ))}
+              </div>
+            </aside>
+
+            {/* Main field grid */}
+            <main>
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                <div className="mb-5">
+                  <h2 className="text-lg font-bold text-gray-900">{currentCat.name}</h2>
+                  <p className="text-sm text-gray-400 mt-0.5">
+                    {currentCat.total} field{currentCat.total !== 1 ? 's' : ''} populated in this category
+                    {currentCat.reviewCount > 0 && <span className="text-amber-600 font-medium"> · {currentCat.reviewCount} needs review</span>}
+                  </p>
+                </div>
+
+                {currentCat.fieldKeys.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {currentCat.fieldKeys.map(key => (
+                      <FieldCard
+                        key={key}
+                        fieldKey={key}
+                        meta={FIELD_META[key]}
+                        data={fieldValues[key]}
+                        onUpdate={handleUpdate}
+                        onOpenSuggestions={() => setActiveField(key)}
+                        active={key === activeField}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-sm text-gray-400 py-10 text-center">
+                    Fields for this category aren't wired into the demo yet — shown as fully populated in the sidebar count.
+                  </div>
+                )}
+              </div>
+            </main>
+
+            {/* Smart suggestions rail */}
+            <aside>
+              <SmartSuggestionsPanel
+                fieldKey={fieldValues[activeField]?.state === 'needs_review' ? activeField : null}
+                fieldLabel={FIELD_META[activeField]?.label}
+                onApply={handleApplySuggestion}
+              />
+            </aside>
+          </div>
+
+          <ProgressFooter
+            populated={totalPopulated}
+            reviewCount={totalReview}
+            onPublish={handlePublish}
+            onSaveDraft={handleSaveDraft}
+            publishing={publishing}
+            canPublish={totalReview === 0}
+          />
+
+          {toast && (
+            <div className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-sm font-medium px-5 py-2.5 rounded-full shadow-xl anim-in z-50">
+              {toast}
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    /* ============================== APP ROOT ============================== */
+
+    const App = () => {
+      const [page, setPage] = useState('home');
+      const [product, setProduct] = useState(null);
+      const [query, setQuery] = useState('');
+      const [showResults, setShowResults] = useState(false);
+      const searchRef = useRef(null);
+
+      useEffect(() => {
+        const handler = (e) => { if (searchRef.current && !searchRef.current.contains(e.target)) setShowResults(false); };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+      }, []);
+
+      const results = useMemo(() => {
+        if (query.length < 2) return [];
+        const q = query.toLowerCase();
+        return mockProducts.filter(p => p.name.toLowerCase().includes(q) || p.product_key.toLowerCase().includes(q));
+      }, [query]);
+
+      const handleQueryChange = (v) => { setQuery(v); setShowResults(v.length >= 2); };
+      const handleSelect = (p) => { setProduct(p); setPage('listing'); setQuery(''); setShowResults(false); };
+      const handleViewDemo = () => handleSelect(mockProducts[0]);
+      const handleBack = () => { setPage('home'); setProduct(null); };
+
+      const sharedSearchProps = {
+        query, onQueryChange: handleQueryChange, results, showResults,
+        onSelect: handleSelect, onFocus: () => setShowResults(query.length >= 2), searchRef,
+      };
+
+      return page === 'home'
+        ? <Home {...sharedSearchProps} onViewDemo={handleViewDemo} />
+        : <ListingPage product={product} onBack={handleBack} {...sharedSearchProps} />;
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
