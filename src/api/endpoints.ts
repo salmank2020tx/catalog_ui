@@ -4,13 +4,14 @@ import type {
   Listing,
   ListingGenerationRequest,
   ListingGenerationResponse,
-  FieldUpdate,
 } from '@/types';
 
 export const productApi = {
+  list: (params?: { search?: string; q?: string }) =>
+    apiClient.get<Product[]>('/products/', { params }),
   search: (query: string) =>
     apiClient.get<Product[]>(`/products/search?q=${encodeURIComponent(query)}`),
-  getProduct: (id: number) => apiClient.get<Product>(`/products/${id}`),
+  getProduct: (id: string | number) => apiClient.get<Product>(`/products/${id}`),
 };
 
 export const listingApi = {

@@ -4,16 +4,31 @@ import { Header } from '@/components/Layout/Header';
 import { Button } from '@/components/common/Button';
 import { SparkIcon } from '@/components/common/Icons';
 import { TemplateSelector } from '@/components/common/TemplateSelector';
-import { mockProducts } from '@/data/mockData';
+import { useProductsQuery } from '@/hooks/useProductsQuery';
+import type { Product } from '@/types';
 
 export const Home = () => {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
   const [showResults, setShowResults] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
   const [template, setTemplate] = useState('Amazon');
   const [market, setMarket] = useState('UK');
   const [language, setLanguage] = useState('English');
+
+  // Debounce the query to prevent aggressive API calling
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedQuery(query);
+    }, 200);
+    return () => clearTimeout(handler);
+  }, [query]);
+
+  // Load products list on application load (debouncedQuery is empty initially)
+  const { data: products = [] } = useProductsQuery(
+    debouncedQuery.length >= 2 ? debouncedQuery : undefined
+  );
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -25,16 +40,16 @@ export const Home = () => {
 
   const results = useMemo(() => {
     if (query.length < 2) return [];
-    const q = query.toLowerCase();
-    return mockProducts.filter(p => p.name.toLowerCase().includes(q) || p.product_key.toLowerCase().includes(q));
-  }, [query]);
+    return products;
+  }, [query, products]);
 
-  const handleSelect = (p: typeof mockProducts[0]) => {
+  const handleSelect = (p: Product) => {
     navigate(`/listing?productId=${p.id}&template=${template}&market=${market}&language=${language}`);
   };
 
   const handleViewDemo = () => {
-    navigate(`/listing?productId=${mockProducts[0].id}&template=${template}&market=${market}&language=${language}`);
+    const demoId = products[0]?.id || 'c5308c4d-b6c8-47fb-8671-bc01db5452f4';
+    navigate(`/listing?productId=${demoId}&template=${template}&market=${market}&language=${language}`);
   };
 
   const handleTemplateChange = (t: string, m: string, l: string) => {

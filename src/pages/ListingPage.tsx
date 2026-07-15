@@ -8,11 +8,13 @@ import { SmartSuggestionsPanel } from '@/components/Listing/SmartSuggestionsPane
 import { TemplateSelector } from '@/components/common/TemplateSelector';
 import { LinkIcon } from '@/components/common/Icons';
 import { mockProducts, FIELD_META, initialFieldValues, CATEGORY_DEFS, CATEGORY_STATS, SUGGESTIONS, TOTAL_FIELDS_IN_TEMPLATE, FOOTER_BASELINE_POPULATED } from '@/data/mockData';
+import { useProductsQuery } from '@/hooks/useProductsQuery';
+import type { Product } from '@/types';
 
 export const ListingPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const productId = parseInt(searchParams.get('productId') || '1');
+  const productId = searchParams.get('productId') || '';
   const product = mockProducts.find(p => p.id === productId) || mockProducts[0];
 
   // Read template selections from URL (or default)
@@ -28,12 +30,27 @@ export const ListingPage = () => {
 
   // Search state for header - initialized with the product name
   const [query, setQuery] = useState(product.name);
+  const [debouncedQuery, setDebouncedQuery] = useState(product.name);
   const [showResults, setShowResults] = useState(false);
 
   // Sync query when product changes
   useEffect(() => {
     setQuery(product.name);
+    setDebouncedQuery(product.name);
   }, [product]);
+
+  // Debounce the query to prevent aggressive API calling
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedQuery(query);
+    }, 200);
+    return () => clearTimeout(handler);
+  }, [query]);
+
+  // Load search results using the API
+  const { data: searchProducts = [] } = useProductsQuery(
+    debouncedQuery.length >= 2 ? debouncedQuery : undefined
+  );
 
   const categories = useMemo(() => {
     return CATEGORY_DEFS.map(cat => {
@@ -88,11 +105,10 @@ export const ListingPage = () => {
 
   const searchResults = useMemo(() => {
     if (query.length < 2) return [];
-    const q = query.toLowerCase();
-    return mockProducts.filter(p => p.name.toLowerCase().includes(q) || p.product_key.toLowerCase().includes(q));
-  }, [query]);
+    return searchProducts;
+  }, [query, searchProducts]);
 
-  const handleSearchSelect = (p: typeof mockProducts[0]) => {
+  const handleSearchSelect = (p: Product) => {
     navigate(`/listing?productId=${p.id}&template=${template}&market=${market}&language=${language}`);
     setQuery(p.name);
     setShowResults(false);

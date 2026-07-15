@@ -1,10 +1,11 @@
 import { Product, FieldValue, FieldMeta, CategoryDef, CategoryStats, Suggestion } from '@/types';
 
 export const mockProducts: Product[] = [
-  { id: 1, name: 'Castrol EDGE 5W-30 Advanced Full Synthetic Motor Oil, 5 Quarts', product_key: 'CAS-EDG-5W30-5Q', brand: 'Castrol' },
-  { id: 2, name: 'Castrol GTX 15W-40 Diesel Engine Oil, 5L', product_key: 'CAS-GTX-15W40-5L', brand: 'Castrol' },
-  { id: 3, name: 'Castrol MAGNATEC 5W-30 C3 Full Synthetic', product_key: 'CAS-MAG-5W30-C3', brand: 'Castrol' },
-  { id: 4, name: 'Castrol GTX HIGH MILEAGE 10W-40, 5 Quarts', product_key: 'CAS-GTX-HM-10W40-5Q', brand: 'Castrol' },
+  { id: 'c5308c4d-b6c8-47fb-8671-bc01db5452f4', name: 'Castrol EDGE 5W-30 Advanced Full Synthetic Motor Oil, 5 Quarts', product_key: 'CAS-EDG-5W30-5Q', brand: 'Castrol', product_family: 'EDGE' },
+  { id: 'a1208c4d-b6c8-47fb-8671-bc01db5452f5', name: 'Castrol GTX 15W-40 Diesel Engine Oil, 5L', product_key: 'CAS-GTX-15W40-5L', brand: 'Castrol', product_family: 'GTX' },
+  { id: 'b3408c4d-b6c8-47fb-8671-bc01db5452f6', name: 'Castrol MAGNATEC 5W-30 C3 Full Synthetic', product_key: 'CAS-MAG-5W30-C3', brand: 'Castrol', product_family: 'MAGNATEC' },
+  { id: 'd5608c4d-b6c8-47fb-8671-bc01db5452f7', name: 'Castrol GTX HIGH MILEAGE 10W-40, 5 Quarts', product_key: 'CAS-GTX-HM-10W40-5Q', brand: 'Castrol', product_family: 'GTX' },
+  { id: 'e9638c4d-b6c8-47fb-8671-bc01db5452f3', name: 'Shell Gadus S2 V220 2', product_key: 'SKU-99081', brand: 'Shell', product_family: 'Gadus' },
 ];
 
 export const FIELD_META: Record<string, FieldMeta> = {
