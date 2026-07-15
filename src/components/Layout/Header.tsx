@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LightningIcon } from '@/components/common/Icons';
+import { CastrolLogoIcon } from '@/components/common/Icons';
 import { Product } from '@/types';
 
 interface Props {
@@ -11,6 +11,7 @@ interface Props {
   onSelect: (p: Product) => void;
   onFocus: () => void;
   onCloseResults?: () => void;
+  showSearch?: boolean;
 }
 
 const REGIONS: Record<string, string> = {
@@ -26,7 +27,7 @@ const REGIONS: Record<string, string> = {
   mexico: 'Mexico',
 };
 
-export const Header = ({ query, onQueryChange, results, showResults, onSelect, onFocus, onCloseResults }: Props) => {
+export const Header = ({ query, onQueryChange, results, showResults, onSelect, onFocus, onCloseResults, showSearch = true }: Props) => {
   const navigate = useNavigate();
   const searchRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
@@ -84,9 +85,9 @@ export const Header = ({ query, onQueryChange, results, showResults, onSelect, o
     <header className="sticky top-0 z-30" style={{ background: 'linear-gradient(135deg, var(--forest-900), var(--forest-700))' }}>
       <div className="max-w-[1400px] mx-auto pl-2 pr-6 py-4 grid grid-cols-[280px_1fr_280px] items-center gap-4">
         {/* Left: Logo and title */}
-        <div className="flex items-start gap-3 shrink-0 cursor-pointer select-none" onClick={() => navigate('/')}>
-          <div className="w-10 h-10 rounded-xl bg-[var(--lime-400)] flex items-center justify-center shadow-sm mt-0.5">
-            <LightningIcon className="w-5 h-5 text-[var(--forest-900)]" />
+        <div className="flex items-center gap-3 shrink-0 cursor-pointer select-none" onClick={() => navigate('/')}>
+          <div className="w-14 h-14 flex items-center justify-center shrink-0">
+            <CastrolLogoIcon className="w-14 h-14" />
           </div>
           <div>
             <div className="text-white font-serif font-bold text-[17px] leading-tight tracking-tight">Product Information<br/>Management Tool</div>
@@ -95,33 +96,37 @@ export const Header = ({ query, onQueryChange, results, showResults, onSelect, o
         </div>
 
         {/* Center: Search input wrapper centered in grid */}
-        <div className="flex justify-center relative w-full" ref={searchRef}>
-          <div className="w-full max-w-[580px] relative">
-            <div className="relative">
-              <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z"/></svg>
-              <input
-                value={query}
-                onChange={(e) => onQueryChange(e.target.value)}
-                onFocus={onFocus}
-                placeholder="Search product name, SKU, or model number..."
-                className="w-full bg-white rounded-lg pl-11 pr-4 py-2.5 text-sm text-gray-800 placeholder-gray-400 outline-none ring-0 focus:ring-2 focus:ring-[var(--lime-400)] shadow-sm"
-              />
+        {showSearch ? (
+          <div className="flex justify-center relative w-full" ref={searchRef}>
+            <div className="w-full max-w-[580px] relative">
+              <div className="relative">
+                <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z"/></svg>
+                <input
+                  value={query}
+                  onChange={(e) => onQueryChange(e.target.value)}
+                  onFocus={onFocus}
+                  placeholder="Search product name, SKU, or model number..."
+                  className="w-full bg-white rounded-lg pl-11 pr-4 py-2.5 text-sm text-gray-800 placeholder-gray-400 outline-none ring-0 focus:ring-2 focus:ring-[var(--lime-400)] shadow-sm"
+                />
+              </div>
+              {showResults && results.length > 0 && (
+                <ul className="absolute z-40 w-full mt-1.5 bg-white border border-gray-200 rounded-lg shadow-xl max-h-72 overflow-auto anim-in">
+                  {results.map(p => (
+                    <li key={p.id} onClick={() => onSelect(p)} className="px-4 py-3 hover:bg-emerald-50 cursor-pointer flex items-center justify-between border-b border-gray-100 last:border-0">
+                      <div>
+                        <div className="text-sm font-medium text-gray-800">{p.name}</div>
+                        <div className="text-xs text-gray-400 mt-0.5">{p.brand}</div>
+                      </div>
+                      <span className="text-xs font-mono text-gray-400">{p.product_key}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
-            {showResults && results.length > 0 && (
-              <ul className="absolute z-40 w-full mt-1.5 bg-white border border-gray-200 rounded-lg shadow-xl max-h-72 overflow-auto anim-in">
-                {results.map(p => (
-                  <li key={p.id} onClick={() => onSelect(p)} className="px-4 py-3 hover:bg-emerald-50 cursor-pointer flex items-center justify-between border-b border-gray-100 last:border-0">
-                    <div>
-                      <div className="text-sm font-medium text-gray-800">{p.name}</div>
-                      <div className="text-xs text-gray-400 mt-0.5">{p.brand}</div>
-                    </div>
-                    <span className="text-xs font-mono text-gray-400">{p.product_key}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
           </div>
-        </div>
+        ) : (
+          <div />
+        )}
 
         {/* Right: Profile */}
         <div className="justify-self-end relative" ref={profileRef}>

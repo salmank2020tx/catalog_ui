@@ -38,3 +38,29 @@ export const ExclamationIcon = ({ className = 'w-5 h-5' }) => (
     <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v5m0 3.5h.01" />
   </svg>
 );
+export const CastrolLogoIcon = ({ className = 'w-5 h-5' }) => (
+  <svg className={className} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <clipPath id="castrolCircleClip">
+        <circle cx="50" cy="50" r="50" />
+      </clipPath>
+    </defs>
+    <g clipPath="url(#castrolCircleClip)">
+      <circle cx="50" cy="50" r="50" fill="#009043" />
+      <path
+        d="M 42 -5 C 35 18, 18 38, 35 49 C 45 54, 65 54, 105 54"
+        fill="none"
+        stroke="#ffffff"
+        strokeWidth="18"
+        strokeLinecap="butt"
+      />
+      <path
+        d="M 42 -5 C 35 18, 18 38, 35 49 C 45 54, 65 54, 105 54"
+        fill="none"
+        stroke="#f00023"
+        strokeWidth="10"
+        strokeLinecap="butt"
+      />
+    </g>
+  </svg>
+);

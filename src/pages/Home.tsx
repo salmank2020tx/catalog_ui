@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { Header } from '@/components/Layout/Header';
 import { Button } from '@/components/common/Button';
-import { SparkIcon } from '@/components/common/Icons';
+
 import { TemplateSelector } from '@/components/common/TemplateSelector';
 import { useProductsQuery } from '@/hooks/useProductsQuery';
 import type { Product } from '@/types';
@@ -88,18 +88,6 @@ export const Home = () => {
     navigate(`/listing?productIds=${ids}&template=${template}&market=${market}&language=${language}`);
   };
 
-  const handleViewDemo = () => {
-    const demoBatch = centerProducts.length >= 2 ? centerProducts.slice(0, 2) : (productsDemoList().slice(0, 2));
-    const demoIds = demoBatch.map(p => p.id).join(',') || 'c5308c4d-b6c8-47fb-8671-bc01db5452f4,a1208c4d-b6c8-47fb-8671-bc01db5452f5';
-    navigate(`/listing?productIds=${demoIds}&template=${template}&market=${market}&language=${language}`);
-  };
-
-  const productsDemoList = () => {
-    return [
-      { id: 'c5308c4d-b6c8-47fb-8671-bc01db5452f4', name: 'Castrol EDGE 5W-30 Advanced Full Synthetic Motor Oil, 5 Quarts', product_key: 'CAS-EDG-5W30-5Q', brand: 'Castrol' },
-      { id: 'a1208c4d-b6c8-47fb-8671-bc01db5452f5', name: 'Castrol GTX 15W-40 Diesel Engine Oil, 5L', product_key: 'CAS-GTX-15W40-5L', brand: 'Castrol' }
-    ];
-  };
 
   const handleTemplateChange = (t: string, m: string, l: string) => {
     setTemplate(t);
@@ -120,6 +108,7 @@ export const Home = () => {
         onSelect={handleToggleProduct}
         onFocus={() => setShowHeaderResults(headerQuery.length >= 2)}
         onCloseResults={() => setShowHeaderResults(false)}
+        showSearch={false}
       />
       <TemplateSelector
         initialTemplate={template}
@@ -129,9 +118,6 @@ export const Home = () => {
       />
       <div className="min-h-[60vh] flex flex-col items-center justify-center px-6 py-10">
         <div className="max-w-2xl w-full text-center">
-          <div className="w-14 h-14 rounded-2xl bg-[var(--forest-700)] mx-auto flex items-center justify-center mb-5 shadow-lg">
-            <SparkIcon className="w-7 h-7 text-[var(--lime-400)]" />
-          </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2 tracking-tight">Create a new product listing</h1>
           <p className="text-gray-500 mb-8">Select your template, market and language above, then search for products to add.</p>
           
@@ -222,12 +208,7 @@ export const Home = () => {
             >
               Create Listing for Selected Products ({selectedProducts.length})
             </Button>
-            
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-400">or</span>
-              <Button variant="outline" onClick={handleViewDemo} className="font-semibold">View Demo Batch Listing →</Button>
-            </div>
-            <p className="text-xs text-gray-400">Try typing "Castrol" in the search bar above to select multiple items.</p>
+
           </div>
         </div>
       </div>

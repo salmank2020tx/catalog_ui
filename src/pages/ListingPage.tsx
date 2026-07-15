@@ -35,9 +35,9 @@ export const ListingPage = () => {
   }, [productIds, navigate]);
 
   // Read template selections from URL (or default)
-  const [template, setTemplate] = useState(searchParams.get('template') || 'Amazon');
-  const [market, setMarket] = useState(searchParams.get('market') || 'UK');
-  const [language, setLanguage] = useState(searchParams.get('language') || 'English');
+  const template = searchParams.get('template') || 'Amazon';
+  const market = searchParams.get('market') || 'UK';
+  const language = searchParams.get('language') || 'English';
 
   const [fieldValues, setFieldValues] = useState(initialFieldValues);
   const [activeCategory, setActiveCategory] = useState('product_details');
@@ -151,17 +151,6 @@ export const ListingPage = () => {
     ? SUGGESTIONS[activeField] || []
     : [];
 
-  // Handler for template changes – update URL params
-  const handleTemplateChange = (t: string, m: string, l: string) => {
-    setTemplate(t);
-    setMarket(m);
-    setLanguage(l);
-    const params = new URLSearchParams(searchParams);
-    params.set('template', t);
-    params.set('market', m);
-    params.set('language', l);
-    navigate({ search: params.toString() }, { replace: true });
-  };
 
   return (
     <div className="min-h-screen flex flex-col bg-[var(--paper)] font-sans">
