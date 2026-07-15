@@ -50,13 +50,13 @@ export const ListingPage = () => {
   const [debouncedQuery, setDebouncedQuery] = useState(firstProduct?.name || '');
   const [showResults, setShowResults] = useState(false);
 
-  // Sync query when first product changes
+  // Sync query when first product changes, but only if the dropdown is NOT open!
   useEffect(() => {
-    if (firstProduct) {
+    if (firstProduct && !showResults) {
       setQuery(firstProduct.name);
       setDebouncedQuery(firstProduct.name);
     }
-  }, [firstProduct]);
+  }, [firstProduct, showResults]);
 
   // Debounce the query to prevent aggressive API calling
   useEffect(() => {
@@ -123,27 +123,32 @@ export const ListingPage = () => {
   };
 
   const searchResults = useMemo(() => {
-    if (query.length < 2) return [];
+    if (query.trim().length === 0) return mockProducts;
     return searchProducts;
   }, [query, searchProducts]);
 
   const handleSearchSelect = (p: Product) => {
-    // Navigate to single product edit view
-    navigate(`/listing?productIds=${p.id}&template=${template}&market=${market}&language=${language}`);
-    setQuery(p.name);
-    setShowResults(false);
-  };
-
-  const handleRemoveProductFromBatch = (idToRemove: string) => {
-    const remainingIds = productIds.filter(id => id !== idToRemove);
-    if (remainingIds.length === 0) {
+    if (p.id === '__clear_all__') {
+      navigate('/');
+      return;
+    }
+    const exists = productIds.includes(p.id);
+    let newIds: string[];
+    if (exists) {
+      newIds = productIds.filter(id => id !== p.id);
+    } else {
+      newIds = [...productIds, p.id];
+    }
+    
+    if (newIds.length === 0) {
       navigate('/');
     } else {
       const params = new URLSearchParams(searchParams);
-      params.set('productIds', remainingIds.join(','));
+      params.set('productIds', newIds.join(','));
       navigate({ search: params.toString() }, { replace: true });
     }
   };
+
 
   const handleBack = () => navigate('/');
 
@@ -158,13 +163,14 @@ export const ListingPage = () => {
         query={query}
         onQueryChange={(val) => {
           setQuery(val);
-          setShowResults(val.length >= 2);
+          setShowResults(true);
         }}
         results={searchResults}
         showResults={showResults}
         onSelect={handleSearchSelect}
-        onFocus={() => setShowResults(query.length >= 2)}
+        onFocus={() => setShowResults(true)}
         onCloseResults={() => setShowResults(false)}
+        selectedProducts={selectedProducts}
       />
 
 
@@ -195,26 +201,6 @@ export const ListingPage = () => {
         )}
 
         <div className="flex flex-wrap items-center gap-2 mt-2">
-          {selectedProducts.map((p) => (
-            <div
-              key={p.id}
-              className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-800 px-2.5 py-1 rounded-lg border border-emerald-200 text-xs font-semibold select-none"
-            >
-              <span className="max-w-[180px] truncate" title={p.name}>{p.name}</span>
-              <span className="text-[10px] text-emerald-600 font-mono font-bold shrink-0">({p.product_key})</span>
-              {selectedProducts.length > 1 && (
-                <button
-                  onClick={() => handleRemoveProductFromBatch(p.id)}
-                  className="text-emerald-600 hover:text-emerald-950 font-extrabold text-xs ml-1 focus:outline-none shrink-0"
-                >
-                  ×
-                </button>
-              )}
-            </div>
-          ))}
-          
-          <div className="h-4 w-px bg-gray-300 mx-2 hidden sm:block" />
-          
           <span className="text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full border border-emerald-200 font-bold select-none">{template}</span>
           <span className="text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full border border-blue-200 font-bold select-none">{market}</span>
           <span className="text-xs bg-purple-50 text-purple-700 px-2.5 py-1 rounded-full border border-purple-200 font-bold select-none">{language}</span>

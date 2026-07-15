@@ -5,6 +5,7 @@ import { Button } from '@/components/common/Button';
 
 import { TemplateSelector } from '@/components/common/TemplateSelector';
 import { useProductsQuery } from '@/hooks/useProductsQuery';
+import { mockProducts } from '@/data/mockData';
 import type { Product } from '@/types';
 
 export const Home = () => {
@@ -63,11 +64,15 @@ export const Home = () => {
   }, []);
 
   const results = useMemo(() => {
-    if (query.length < 2) return [];
+    if (query.trim().length === 0) return mockProducts;
     return centerProducts;
   }, [query, centerProducts]);
 
   const handleToggleProduct = (p: Product) => {
+    if (p.id === '__clear_all__') {
+      setSelectedProducts([]);
+      return;
+    }
     setSelectedProducts((prev) => {
       const exists = prev.some((sp) => sp.id === p.id);
       if (exists) {
@@ -78,9 +83,6 @@ export const Home = () => {
     });
   };
 
-  const handleRemoveProduct = (productId: string) => {
-    setSelectedProducts((prev) => prev.filter((sp) => sp.id !== productId));
-  };
 
   const handleCreateListing = () => {
     if (selectedProducts.length === 0) return;
@@ -101,14 +103,15 @@ export const Home = () => {
         query={headerQuery}
         onQueryChange={(val) => {
           setHeaderQuery(val);
-          setShowHeaderResults(val.length >= 2);
+          setShowHeaderResults(true);
         }}
         results={headerProducts}
         showResults={showHeaderResults}
         onSelect={handleToggleProduct}
-        onFocus={() => setShowHeaderResults(headerQuery.length >= 2)}
+        onFocus={() => setShowHeaderResults(true)}
         onCloseResults={() => setShowHeaderResults(false)}
         showSearch={false}
+        selectedProducts={selectedProducts}
       />
       <TemplateSelector
         initialTemplate={template}
@@ -122,81 +125,95 @@ export const Home = () => {
           <p className="text-gray-500 mb-8">Select your template, market and language above, then search for products to add.</p>
           
           <div ref={searchRef} className="relative">
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => {
-                const val = e.target.value;
-                setQuery(val);
-                setShowResults(val.length >= 2);
+            <div 
+              className="w-full bg-white border border-gray-300 rounded-lg shadow-sm flex flex-wrap items-center gap-2 px-4 py-3 min-h-[58px] focus-within:ring-2 focus-within:ring-[var(--forest-500)] focus-within:border-transparent transition cursor-text"
+              onClick={() => {
+                const inputEl = document.getElementById('center-search-input');
+                inputEl?.focus();
               }}
-              onFocus={() => setShowResults(query.length >= 2)}
-              placeholder="Search product name, SKU, or model number..."
-              className="w-full px-5 py-4 text-lg border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-[var(--forest-500)] focus:border-transparent outline-none transition bg-white text-gray-800"
-            />
+            >
+              {/* Render selected product chips inside the search container */}
+              {selectedProducts.map(p => (
+                <span 
+                  key={p.id} 
+                  className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 px-3 py-1 rounded border border-emerald-200 text-xs font-semibold select-none max-w-[200px]"
+                >
+                  <span className="truncate" title={p.name}>{p.name}</span>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleToggleProduct(p);
+                    }}
+                    className="text-emerald-600 hover:text-emerald-950 font-bold ml-1 focus:outline-none"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+
+              <input
+                id="center-search-input"
+                type="text"
+                value={query}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setQuery(val);
+                  setShowResults(true);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Backspace' && query.length === 0 && selectedProducts.length > 0) {
+                    handleToggleProduct(selectedProducts[selectedProducts.length - 1]);
+                  }
+                }}
+                onFocus={() => setShowResults(true)}
+                placeholder={selectedProducts.length === 0 ? "Search product name, SKU, or model number..." : ""}
+                className="border-none outline-none flex-1 min-w-[150px] bg-transparent text-sm py-1 text-gray-800 placeholder-gray-400"
+              />
+
+              {selectedProducts.length > 0 && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedProducts([]);
+                  }}
+                  className="text-xs font-bold text-gray-400 hover:text-red-500 transition px-2 select-none"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+
             {showResults && results.length > 0 && (
-              <ul className="absolute z-10 w-full mt-1.5 bg-white border border-gray-200 rounded-lg shadow-xl max-h-72 overflow-auto anim-in text-left">
-                {results.map(p => {
-                  const isChecked = selectedProducts.some(sp => sp.id === p.id);
-                  return (
-                    <li
-                      key={p.id}
-                      onClick={() => handleToggleProduct(p)}
-                      className="px-4 py-3 hover:bg-emerald-50 cursor-pointer flex items-center justify-between border-b border-gray-100 last:border-0"
-                    >
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="checkbox"
-                          checked={isChecked}
-                          onChange={() => {}} // handled by click
-                          className="w-4 h-4 text-[var(--forest-600)] border-gray-300 rounded focus:ring-[var(--forest-500)] cursor-pointer"
-                        />
-                        <div>
-                          <div className="text-sm font-semibold text-gray-800 leading-tight">{p.name}</div>
-                          <div className="text-xs text-gray-400 mt-0.5">{p.brand}</div>
+              <div className="absolute z-10 w-full mt-1.5 bg-white border border-gray-200 rounded-lg shadow-xl max-h-72 overflow-auto anim-in text-left">
+                <ul>
+                  {results.map(p => {
+                    const isChecked = selectedProducts.some(sp => sp.id === p.id);
+                    return (
+                      <li
+                        key={p.id}
+                        onClick={() => handleToggleProduct(p)}
+                        className="px-4 py-3 hover:bg-emerald-50 cursor-pointer flex items-center justify-between border-b border-gray-100 last:border-0"
+                      >
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => {}} // handled by click
+                            className="w-4 h-4 text-[var(--forest-600)] border-gray-300 rounded focus:ring-[var(--forest-500)] cursor-pointer"
+                          />
+                          <div>
+                            <div className="text-sm font-semibold text-gray-800 leading-tight">{p.name}</div>
+                            <div className="text-xs text-gray-400 mt-0.5">{p.brand}</div>
+                          </div>
                         </div>
-                      </div>
-                      <span className="text-xs font-mono text-gray-400 shrink-0 ml-4">{p.product_key}</span>
-                    </li>
-                  );
-                })}
-              </ul>
+                        <span className="text-xs font-mono text-gray-400 shrink-0 ml-4">{p.product_key}</span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
             )}
           </div>
-
-          {/* Selected Products Chips display */}
-          {selectedProducts.length > 0 && (
-            <div className="mt-8 text-left bg-white p-5 rounded-xl border border-gray-200 shadow-sm anim-in">
-              <div className="flex justify-between items-center mb-3">
-                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Selected Products ({selectedProducts.length})</span>
-                <button
-                  onClick={() => setSelectedProducts([])}
-                  className="text-xs font-bold text-red-500 hover:text-red-700 transition"
-                >
-                  Clear All
-                </button>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {selectedProducts.map(p => (
-                  <div
-                    key={p.id}
-                    className="inline-flex items-center gap-2 bg-emerald-50 text-emerald-800 px-3 py-1.5 rounded-lg border border-emerald-200 text-sm font-medium"
-                  >
-                    <div className="max-w-[240px] truncate" title={p.name}>
-                      {p.name}
-                    </div>
-                    <span className="text-xs text-emerald-600 font-mono font-semibold shrink-0">({p.product_key})</span>
-                    <button
-                      onClick={() => handleRemoveProduct(p.id)}
-                      className="text-emerald-600 hover:text-emerald-950 font-extrabold focus:outline-none ml-1 text-sm leading-none shrink-0"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* Actions */}
           <div className="mt-8 flex flex-col items-center gap-4">

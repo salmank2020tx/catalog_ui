@@ -12,6 +12,7 @@ interface Props {
   onFocus: () => void;
   onCloseResults?: () => void;
   showSearch?: boolean;
+  selectedProducts?: Product[];
 }
 
 const REGIONS: Record<string, string> = {
@@ -27,8 +28,9 @@ const REGIONS: Record<string, string> = {
   mexico: 'Mexico',
 };
 
-export const Header = ({ query, onQueryChange, results, showResults, onSelect, onFocus, onCloseResults, showSearch = true }: Props) => {
+export const Header = ({ query, onQueryChange, results, showResults, onSelect, onFocus, onCloseResults, showSearch = true, selectedProducts = [] }: Props) => {
   const navigate = useNavigate();
+  const selectedProductIds = selectedProducts.map(sp => sp.id);
   const searchRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
 
@@ -95,31 +97,84 @@ export const Header = ({ query, onQueryChange, results, showResults, onSelect, o
           </div>
         </div>
 
-        {/* Center: Search input wrapper centered in grid */}
         {showSearch ? (
           <div className="flex justify-center relative w-full" ref={searchRef}>
             <div className="w-full max-w-[580px] relative">
-              <div className="relative">
-                <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z"/></svg>
+              <div 
+                className="w-full bg-white rounded-lg flex flex-wrap items-center gap-1.5 px-3 py-1.5 min-h-[38px] shadow-sm border border-transparent focus-within:ring-2 focus-within:ring-[var(--lime-400)] transition cursor-text"
+                onClick={() => {
+                  const inputEl = document.getElementById('header-search-input');
+                  inputEl?.focus();
+                }}
+              >
+                {/* Render selected product chips inside the header selectbox */}
+                {selectedProducts.map(p => (
+                  <span 
+                    key={p.id} 
+                    className="inline-flex items-center gap-0.5 bg-emerald-50 text-emerald-800 px-1.5 py-0.5 rounded border border-emerald-100 text-[11px] font-semibold select-none max-w-[140px]"
+                  >
+                    <span className="truncate" title={p.name}>{p.name}</span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSelect(p);
+                      }}
+                      className="text-emerald-600 hover:text-emerald-950 font-bold ml-0.5 focus:outline-none"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+
                 <input
+                  id="header-search-input"
                   value={query}
                   onChange={(e) => onQueryChange(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Backspace' && query.length === 0 && selectedProducts.length > 0) {
+                      onSelect(selectedProducts[selectedProducts.length - 1]);
+                    }
+                  }}
                   onFocus={onFocus}
-                  placeholder="Search product name, SKU, or model number..."
-                  className="w-full bg-white rounded-lg pl-11 pr-4 py-2.5 text-sm text-gray-800 placeholder-gray-400 outline-none ring-0 focus:ring-2 focus:ring-[var(--lime-400)] shadow-sm"
+                  placeholder={selectedProducts.length === 0 ? "Search product name, SKU, or model number..." : ""}
+                  className="border-none outline-none flex-1 min-w-[120px] bg-transparent text-xs py-0.5 text-gray-800 placeholder-gray-400"
                 />
+
+                {selectedProducts.length > 0 && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSelect({ id: '__clear_all__' } as any);
+                    }}
+                    className="text-[10px] font-bold text-gray-400 hover:text-red-500 transition px-1 select-none"
+                  >
+                    Clear
+                  </button>
+                )}
               </div>
+              
               {showResults && results.length > 0 && (
-                <ul className="absolute z-40 w-full mt-1.5 bg-white border border-gray-200 rounded-lg shadow-xl max-h-72 overflow-auto anim-in">
-                  {results.map(p => (
-                    <li key={p.id} onClick={() => onSelect(p)} className="px-4 py-3 hover:bg-emerald-50 cursor-pointer flex items-center justify-between border-b border-gray-100 last:border-0">
-                      <div>
-                        <div className="text-sm font-medium text-gray-800">{p.name}</div>
-                        <div className="text-xs text-gray-400 mt-0.5">{p.brand}</div>
-                      </div>
-                      <span className="text-xs font-mono text-gray-400">{p.product_key}</span>
-                    </li>
-                  ))}
+                <ul className="absolute z-40 w-full mt-1.5 bg-white border border-gray-200 rounded-lg shadow-xl max-h-72 overflow-auto anim-in text-left">
+                  {results.map(p => {
+                    const isChecked = selectedProductIds.includes(p.id);
+                    return (
+                      <li key={p.id} onClick={() => onSelect(p)} className="px-4 py-3 hover:bg-emerald-50 cursor-pointer flex items-center justify-between border-b border-gray-100 last:border-0">
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => {}} // handled by click
+                            className="w-4 h-4 text-[var(--forest-600)] border-gray-300 rounded focus:ring-[var(--forest-500)] cursor-pointer"
+                          />
+                          <div>
+                            <div className="text-sm font-semibold text-gray-800 leading-tight">{p.name}</div>
+                            <div className="text-xs text-gray-400 mt-0.5">{p.brand}</div>
+                          </div>
+                        </div>
+                        <span className="text-xs font-mono text-gray-400 shrink-0 ml-4">{p.product_key}</span>
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </div>
