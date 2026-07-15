@@ -5,7 +5,6 @@ import { ProgressFooter } from '@/components/Layout/ProgressFooter';
 import { Sidebar } from '@/components/Listing/Sidebar';
 import { FieldCard } from '@/components/Listing/FieldCard';
 import { SmartSuggestionsPanel } from '@/components/Listing/SmartSuggestionsPanel';
-import { TemplateSelector } from '@/components/common/TemplateSelector';
 import { LinkIcon } from '@/components/common/Icons';
 import { mockProducts, FIELD_META, initialFieldValues, CATEGORY_DEFS, CATEGORY_STATS, SUGGESTIONS, TOTAL_FIELDS_IN_TEMPLATE, FOOTER_BASELINE_POPULATED } from '@/data/mockData';
 import { useProductsQuery } from '@/hooks/useProductsQuery';
@@ -179,13 +178,6 @@ export const ListingPage = () => {
         onCloseResults={() => setShowResults(false)}
       />
 
-      {/* Template Selector dropdowns */}
-      <TemplateSelector
-        initialTemplate={template}
-        initialMarket={market}
-        initialLanguage={language}
-        onTemplateChange={handleTemplateChange}
-      />
 
       {/* Back button and Draft state */}
       <div className="max-w-[1400px] w-full mx-auto px-6 pt-4 pb-2 flex items-center justify-between">

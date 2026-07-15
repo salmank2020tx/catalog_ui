@@ -9,16 +9,24 @@ import type { Product } from '@/types';
 
 export const Home = () => {
   const navigate = useNavigate();
+  const searchRef = useRef<HTMLDivElement>(null);
+  
+  // Center search states
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [showResults, setShowResults] = useState(false);
-  const searchRef = useRef<HTMLDivElement>(null);
+
+  // Header search states
+  const [headerQuery, setHeaderQuery] = useState('');
+  const [debouncedHeaderQuery, setDebouncedHeaderQuery] = useState('');
+  const [showHeaderResults, setShowHeaderResults] = useState(false);
+
   const [template, setTemplate] = useState('Amazon');
   const [market, setMarket] = useState('UK');
   const [language, setLanguage] = useState('English');
   const [selectedProducts, setSelectedProducts] = useState<Product[]>([]);
 
-  // Debounce the query to prevent aggressive API calling
+  // Debounce center query
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedQuery(query);
@@ -26,9 +34,22 @@ export const Home = () => {
     return () => clearTimeout(handler);
   }, [query]);
 
-  // Load products list on application load (debouncedQuery is empty initially)
-  const { data: products = [] } = useProductsQuery(
+  // Debounce header query
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedHeaderQuery(headerQuery);
+    }, 200);
+    return () => clearTimeout(handler);
+  }, [headerQuery]);
+
+  // Load center search results
+  const { data: centerProducts = [] } = useProductsQuery(
     debouncedQuery.length >= 2 ? debouncedQuery : undefined
+  );
+
+  // Load header search results
+  const { data: headerProducts = [] } = useProductsQuery(
+    debouncedHeaderQuery.length >= 2 ? debouncedHeaderQuery : undefined
   );
 
   useEffect(() => {
@@ -43,8 +64,8 @@ export const Home = () => {
 
   const results = useMemo(() => {
     if (query.length < 2) return [];
-    return products;
-  }, [query, products]);
+    return centerProducts;
+  }, [query, centerProducts]);
 
   const handleToggleProduct = (p: Product) => {
     setSelectedProducts((prev) => {
@@ -55,8 +76,6 @@ export const Home = () => {
         return [...prev, p];
       }
     });
-    setQuery('');
-    setShowResults(false);
   };
 
   const handleRemoveProduct = (productId: string) => {
@@ -70,10 +89,16 @@ export const Home = () => {
   };
 
   const handleViewDemo = () => {
-    // Select first 2 mock products as a demo batch
-    const demoBatch = products.length >= 2 ? products.slice(0, 2) : (products[0] ? [products[0]] : []);
+    const demoBatch = centerProducts.length >= 2 ? centerProducts.slice(0, 2) : (productsDemoList().slice(0, 2));
     const demoIds = demoBatch.map(p => p.id).join(',') || 'c5308c4d-b6c8-47fb-8671-bc01db5452f4,a1208c4d-b6c8-47fb-8671-bc01db5452f5';
     navigate(`/listing?productIds=${demoIds}&template=${template}&market=${market}&language=${language}`);
+  };
+
+  const productsDemoList = () => {
+    return [
+      { id: 'c5308c4d-b6c8-47fb-8671-bc01db5452f4', name: 'Castrol EDGE 5W-30 Advanced Full Synthetic Motor Oil, 5 Quarts', product_key: 'CAS-EDG-5W30-5Q', brand: 'Castrol' },
+      { id: 'a1208c4d-b6c8-47fb-8671-bc01db5452f5', name: 'Castrol GTX 15W-40 Diesel Engine Oil, 5L', product_key: 'CAS-GTX-15W40-5L', brand: 'Castrol' }
+    ];
   };
 
   const handleTemplateChange = (t: string, m: string, l: string) => {
@@ -85,16 +110,16 @@ export const Home = () => {
   return (
     <div className="font-sans">
       <Header
-        query={query}
+        query={headerQuery}
         onQueryChange={(val) => {
-          setQuery(val);
-          setShowResults(val.length >= 2);
+          setHeaderQuery(val);
+          setShowHeaderResults(val.length >= 2);
         }}
-        results={results}
-        showResults={showResults}
+        results={headerProducts}
+        showResults={showHeaderResults}
         onSelect={handleToggleProduct}
-        onFocus={() => setShowResults(query.length >= 2)}
-        onCloseResults={() => setShowResults(false)}
+        onFocus={() => setShowHeaderResults(headerQuery.length >= 2)}
+        onCloseResults={() => setShowHeaderResults(false)}
       />
       <TemplateSelector
         initialTemplate={template}
