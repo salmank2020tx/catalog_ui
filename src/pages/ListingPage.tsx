@@ -14,8 +14,26 @@ import type { Product } from '@/types';
 export const ListingPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const productId = searchParams.get('productId') || '';
-  const product = mockProducts.find(p => p.id === productId) || mockProducts[0];
+
+  // Support reading multiple product IDs
+  const productIdsParam = searchParams.get('productIds') || searchParams.get('productId') || '';
+  
+  const productIds = useMemo(() => {
+    return productIdsParam ? productIdsParam.split(',').filter(Boolean) : [];
+  }, [productIdsParam]);
+
+  const selectedProducts = useMemo(() => {
+    return mockProducts.filter((p) => productIds.includes(p.id));
+  }, [productIds]);
+
+  const firstProduct = selectedProducts[0] || mockProducts[0];
+
+  // If no products remain, navigate back to Search
+  useEffect(() => {
+    if (productIds.length === 0) {
+      navigate('/');
+    }
+  }, [productIds, navigate]);
 
   // Read template selections from URL (or default)
   const [template, setTemplate] = useState(searchParams.get('template') || 'Amazon');
@@ -29,15 +47,17 @@ export const ListingPage = () => {
   const [toast, setToast] = useState<string | null>(null);
 
   // Search state for header - initialized with the product name
-  const [query, setQuery] = useState(product.name);
-  const [debouncedQuery, setDebouncedQuery] = useState(product.name);
+  const [query, setQuery] = useState(firstProduct?.name || '');
+  const [debouncedQuery, setDebouncedQuery] = useState(firstProduct?.name || '');
   const [showResults, setShowResults] = useState(false);
 
-  // Sync query when product changes
+  // Sync query when first product changes
   useEffect(() => {
-    setQuery(product.name);
-    setDebouncedQuery(product.name);
-  }, [product]);
+    if (firstProduct) {
+      setQuery(firstProduct.name);
+      setDebouncedQuery(firstProduct.name);
+    }
+  }, [firstProduct]);
 
   // Debounce the query to prevent aggressive API calling
   useEffect(() => {
@@ -109,9 +129,21 @@ export const ListingPage = () => {
   }, [query, searchProducts]);
 
   const handleSearchSelect = (p: Product) => {
-    navigate(`/listing?productId=${p.id}&template=${template}&market=${market}&language=${language}`);
+    // Navigate to single product edit view
+    navigate(`/listing?productIds=${p.id}&template=${template}&market=${market}&language=${language}`);
     setQuery(p.name);
     setShowResults(false);
+  };
+
+  const handleRemoveProductFromBatch = (idToRemove: string) => {
+    const remainingIds = productIds.filter(id => id !== idToRemove);
+    if (remainingIds.length === 0) {
+      navigate('/');
+    } else {
+      const params = new URLSearchParams(searchParams);
+      params.set('productIds', remainingIds.join(','));
+      navigate({ search: params.toString() }, { replace: true });
+    }
   };
 
   const handleBack = () => navigate('/');
@@ -133,14 +165,18 @@ export const ListingPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[var(--paper)]">
+    <div className="min-h-screen flex flex-col bg-[var(--paper)] font-sans">
       <Header
         query={query}
-        onQueryChange={setQuery}
+        onQueryChange={(val) => {
+          setQuery(val);
+          setShowResults(val.length >= 2);
+        }}
         results={searchResults}
         showResults={showResults}
         onSelect={handleSearchSelect}
         onFocus={() => setShowResults(query.length >= 2)}
+        onCloseResults={() => setShowResults(false)}
       />
 
       {/* Template Selector dropdowns */}
@@ -153,23 +189,54 @@ export const ListingPage = () => {
 
       {/* Back button and Draft state */}
       <div className="max-w-[1400px] w-full mx-auto px-6 pt-4 pb-2 flex items-center justify-between">
-        <button onClick={handleBack} className="text-sm text-gray-500 hover:text-gray-800 flex items-center gap-1.5 font-medium">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7"/></svg>
+        <button onClick={handleBack} className="text-sm text-gray-500 hover:text-gray-800 flex items-center gap-1.5 font-semibold">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7"/></svg>
           Back to Search
         </button>
         <div className="text-right">
-          <div className="text-xs text-gray-400">Draft · Auto-saved just now</div>
+          <div className="text-xs text-gray-400 font-semibold">Draft · Auto-saved just now</div>
         </div>
       </div>
 
       {/* Product title with template/market/language selection chips */}
       <div className="max-w-[1400px] w-full mx-auto px-6 pb-3">
-        <h1 className="text-xl font-bold text-gray-900">{product.name}</h1>
-        <div className="flex flex-wrap items-center gap-3 mt-1">
-          <p className="text-sm text-gray-400">SKU: <span className="font-mono">{product.product_key}</span> · Brand: {product.brand}</p>
-          <span className="text-xs bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full border border-emerald-200 font-medium">{template}</span>
-          <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full border border-blue-200 font-medium">{market}</span>
-          <span className="text-xs bg-purple-50 text-purple-700 px-2 py-0.5 rounded-full border border-purple-200 font-medium">{language}</span>
+        {selectedProducts.length > 1 ? (
+          <div className="mb-2">
+            <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+              Batch Editing Listing
+              <span className="text-xs bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold border border-emerald-200">
+                {selectedProducts.length} Products Selected
+              </span>
+            </h1>
+          </div>
+        ) : (
+          firstProduct && <h1 className="text-xl font-bold text-gray-900">{firstProduct.name}</h1>
+        )}
+
+        <div className="flex flex-wrap items-center gap-2 mt-2">
+          {selectedProducts.map((p) => (
+            <div
+              key={p.id}
+              className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-800 px-2.5 py-1 rounded-lg border border-emerald-200 text-xs font-semibold select-none"
+            >
+              <span className="max-w-[180px] truncate" title={p.name}>{p.name}</span>
+              <span className="text-[10px] text-emerald-600 font-mono font-bold shrink-0">({p.product_key})</span>
+              {selectedProducts.length > 1 && (
+                <button
+                  onClick={() => handleRemoveProductFromBatch(p.id)}
+                  className="text-emerald-600 hover:text-emerald-950 font-extrabold text-xs ml-1 focus:outline-none shrink-0"
+                >
+                  ×
+                </button>
+              )}
+            </div>
+          ))}
+          
+          <div className="h-4 w-px bg-gray-300 mx-2 hidden sm:block" />
+          
+          <span className="text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full border border-emerald-200 font-bold select-none">{template}</span>
+          <span className="text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full border border-blue-200 font-bold select-none">{market}</span>
+          <span className="text-xs bg-purple-50 text-purple-700 px-2.5 py-1 rounded-full border border-purple-200 font-bold select-none">{language}</span>
         </div>
       </div>
 
@@ -182,11 +249,11 @@ export const ListingPage = () => {
         <main className="h-full">
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 flex flex-col justify-between h-full">
             <div>
-              <div className="mb-5">
+              <div className="mb-5 select-none">
                 <h2 className="text-lg font-bold text-gray-900">{currentCat.name}</h2>
-                <p className="text-sm text-gray-400 mt-0.5 font-medium">
+                <p className="text-sm text-gray-400 mt-0.5 font-semibold">
                   {currentCat.total} fields populated in this category
-                  {currentCat.reviewCount > 0 && <span className="text-amber-600 font-semibold"> · {currentCat.reviewCount} needs review</span>}
+                  {currentCat.reviewCount > 0 && <span className="text-amber-600 font-bold"> · {currentCat.reviewCount} needs review</span>}
                 </p>
               </div>
               {currentCat.fieldKeys.length > 0 ? (
@@ -204,7 +271,7 @@ export const ListingPage = () => {
                   ))}
                 </div>
               ) : (
-                <div className="text-sm text-gray-400 py-10 text-center">
+                <div className="text-sm text-gray-400 py-10 text-center italic">
                   Fields for this category aren't wired into the demo yet.
                 </div>
               )}
@@ -213,7 +280,7 @@ export const ListingPage = () => {
             {/* Global Source Pill Badge at the bottom of the details card */}
             {activeField && fieldValues[activeField]?.sourceLabel && (
               <div className="mt-6 pt-4 border-t border-gray-50 flex">
-                <div className="inline-flex items-center gap-2 bg-[var(--forest-800)] text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow-sm select-none">
+                <div className="inline-flex items-center gap-2 bg-[var(--forest-800)] text-white text-xs font-bold px-3.5 py-2 rounded-lg shadow-sm select-none">
                   <LinkIcon className="w-3.5 h-3.5 text-[var(--lime-400)] shrink-0" />
                   <span>Source: {fieldValues[activeField].sourceLabel}</span>
                 </div>
@@ -244,7 +311,7 @@ export const ListingPage = () => {
       />
 
       {toast && (
-        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-sm font-medium px-5 py-2.5 rounded-full shadow-xl anim-in z-50">
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-sm font-semibold px-5 py-2.5 rounded-full shadow-xl anim-in z-50">
           {toast}
         </div>
       )}

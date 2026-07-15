@@ -22,7 +22,7 @@ export const FieldCard = ({ fieldKey, meta, data, onUpdate, onOpenSuggestions, a
 
   return (
     <div id={fieldKey} className={meta.wide ? 'sm:col-span-2' : ''}>
-      <div className="text-[11px] font-bold tracking-wide text-gray-400 uppercase mb-1.5 flex items-center gap-1.5 select-none">
+      <div className="text-[11px] font-bold tracking-wide text-gray-400 uppercase mb-1.5 flex items-center gap-1.5 select-none font-sans">
         <span>{meta.label}</span>
         {active && (
           <span className="inline-flex items-center gap-1 text-emerald-600 normal-case font-bold ml-1">
@@ -31,9 +31,9 @@ export const FieldCard = ({ fieldKey, meta, data, onUpdate, onOpenSuggestions, a
           </span>
         )}
       </div>
-      <div className={`h-[52px] rounded-lg border flex items-center px-3.5 gap-2 transition-all ${
+      <div className={`h-[52px] rounded-lg border flex items-center px-3.5 gap-2 transition-all font-sans ${
         needsReview
-          ? 'border-[#dc4b4b] bg-[#fdf2f2]'
+          ? 'border-red-500 bg-red-50/50'
           : 'border-gray-200 bg-white hover:border-emerald-300'
       }`}>
         {editing ? (
@@ -45,21 +45,21 @@ export const FieldCard = ({ fieldKey, meta, data, onUpdate, onOpenSuggestions, a
               onKeyDown={(e) => e.key === 'Enter' && commit()}
               className="flex-1 min-w-0 text-sm text-gray-900 outline-none border-b border-emerald-400 pb-0.5 bg-transparent"
             />
-            <button onClick={commit} className="text-xs font-semibold text-emerald-700 hover:text-emerald-800 shrink-0">Save</button>
-            <button onClick={() => { setEditing(false); setDraft(data.value || ''); }} className="text-xs text-gray-400 hover:text-gray-600 shrink-0">Cancel</button>
+            <button onClick={commit} className="text-xs font-bold text-emerald-700 hover:text-emerald-800 shrink-0">Save</button>
+            <button onClick={() => { setEditing(false); setDraft(data.value || ''); }} className="text-xs text-gray-400 hover:text-gray-600 font-semibold shrink-0">Cancel</button>
           </>
         ) : needsReview ? (
           <button onClick={onOpenSuggestions} className="flex-1 flex items-center justify-between text-left group min-w-0 h-full">
-            <span className="flex items-center gap-2 text-sm font-semibold text-[#dc4b4b] min-w-0">
+            <span className="flex items-center gap-2 text-sm font-bold text-red-500 min-w-0">
               <ErrorCircleIcon className="w-5 h-5 shrink-0" />
               <span className="truncate">Not found in source files — choose a suggestion</span>
             </span>
-            <span className="text-[#dc4b4b] group-hover:translate-x-0.5 transition-transform shrink-0 ml-2 font-bold text-sm">→</span>
+            <span className="text-red-500 group-hover:translate-x-0.5 transition-transform shrink-0 ml-2 font-bold text-sm">→</span>
           </button>
         ) : (
           <>
             <span
-              className="flex-1 min-w-0 text-sm text-gray-800 truncate font-medium cursor-pointer"
+              className="flex-1 min-w-0 text-sm text-gray-800 truncate font-semibold cursor-pointer"
               title={data.value}
               onClick={() => setEditing(true)}
             >

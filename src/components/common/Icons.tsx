@@ -17,7 +17,7 @@ export const LightningIcon = ({ className = 'w-5 h-5' }) => (
 );
 export const ErrorCircleIcon = ({ className = 'w-5 h-5' }) => (
   <svg className={className} viewBox="0 0 24 24" fill="none">
-    <circle cx="12" cy="12" r="10" fill="#dc4b4b" />
+    <circle cx="12" cy="12" r="10" fill="#f00023" />
     <path d="M12 8v5M12 16h.01" stroke="white" strokeWidth="2" strokeLinecap="round" />
   </svg>
 );

@@ -6,14 +6,14 @@
 
 @layer base {
   :root {
-    --forest-900: #12321c;
-    --forest-800: #173f22;
-    --forest-700: #1d4b29;
-    --forest-600: #276334;
-    --forest-500: #2f7a3f;
+    --forest-900: #003a1b;
+    --forest-800: #009043;
+    --forest-700: #007335;
+    --forest-600: #009a47;
+    --forest-500: #00b353;
     --lime-400: #8fd35a;
     --amber-500: #e7a63c;
-    --red-500: #dc4b4b;
+    --red-500: #f00023;
     --ink-900: #14181a;
     --ink-600: #5b6570;
     --ink-400: #8a949e;

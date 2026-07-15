@@ -145,33 +145,35 @@ export const TemplateSelector = ({
   };
 
   return (
-    <div className="relative z-20 bg-white/95 backdrop-blur-sm border-b border-gray-200 px-6 py-2.5 flex flex-wrap items-center gap-6 shadow-sm select-none">
-      <CustomSelect
-        label="Template"
-        options={MASTER_TEMPLATES}
-        value={template}
-        onChange={(val) => handleChange('template', val)}
-        searchable
-        widthClass="w-44"
-      />
-      <CustomSelect
-        label="Market"
-        options={MARKET_SEGMENTS}
-        value={market}
-        onChange={(val) => handleChange('market', val)}
-        widthClass="w-36"
-      />
-      <CustomSelect
-        label="Language"
-        options={LANGUAGES}
-        value={language}
-        onChange={(val) => handleChange('language', val)}
-        searchable
-        widthClass="w-44"
-      />
+    <div className="relative z-20 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm select-none">
+      <div className="max-w-[1400px] w-full mx-auto px-6 py-2.5 flex flex-wrap items-center gap-6">
+        <CustomSelect
+          label="Template"
+          options={MASTER_TEMPLATES}
+          value={template}
+          onChange={(val) => handleChange('template', val)}
+          searchable
+          widthClass="w-44"
+        />
+        <CustomSelect
+          label="Market"
+          options={MARKET_SEGMENTS}
+          value={market}
+          onChange={(val) => handleChange('market', val)}
+          widthClass="w-36"
+        />
+        <CustomSelect
+          label="Language"
+          options={LANGUAGES}
+          value={language}
+          onChange={(val) => handleChange('language', val)}
+          searchable
+          widthClass="w-44"
+        />
 
-      <div className="text-xs text-gray-400 font-semibold ml-auto hidden sm:block">
-        {template} · {market} · {language}
+        <div className="text-xs text-gray-400 font-semibold ml-auto hidden sm:block">
+          {template} · {market} · {language}
+        </div>
       </div>
     </div>
   );
