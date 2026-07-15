@@ -101,7 +101,7 @@ export const Header = ({ query, onQueryChange, results, showResults, onSelect, o
           <div className="flex justify-center relative w-full" ref={searchRef}>
             <div className="w-full max-w-[580px] relative">
               <div 
-                className="w-full bg-white rounded-lg flex flex-wrap items-center gap-1.5 px-3 py-1.5 min-h-[38px] shadow-sm border border-transparent focus-within:ring-2 focus-within:ring-[var(--lime-400)] transition cursor-text"
+                className="w-full bg-white rounded-lg flex flex-wrap items-center gap-1.5 pl-3 pr-12 py-1.5 min-h-[38px] shadow-sm border border-transparent focus-within:ring-2 focus-within:ring-[var(--lime-400)] transition cursor-text relative"
                 onClick={() => {
                   const inputEl = document.getElementById('header-search-input');
                   inputEl?.focus();
@@ -146,7 +146,7 @@ export const Header = ({ query, onQueryChange, results, showResults, onSelect, o
                       e.stopPropagation();
                       onSelect({ id: '__clear_all__' } as any);
                     }}
-                    className="text-[10px] font-bold text-gray-400 hover:text-red-500 transition px-1 select-none"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-400 hover:text-red-500 transition px-1 select-none py-0.5"
                   >
                     Clear
                   </button>

@@ -63,6 +63,21 @@ export const Home = () => {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
+  // Clear search queries when dropdowns are closed
+  useEffect(() => {
+    if (!showResults) {
+      setQuery('');
+      setDebouncedQuery('');
+    }
+  }, [showResults]);
+
+  useEffect(() => {
+    if (!showHeaderResults) {
+      setHeaderQuery('');
+      setDebouncedHeaderQuery('');
+    }
+  }, [showHeaderResults]);
+
   const results = useMemo(() => {
     if (query.trim().length === 0) return mockProducts;
     return centerProducts;
@@ -126,7 +141,7 @@ export const Home = () => {
           
           <div ref={searchRef} className="relative">
             <div 
-              className="w-full bg-white border border-gray-300 rounded-lg shadow-sm flex flex-wrap items-center gap-2 px-4 py-3 min-h-[58px] focus-within:ring-2 focus-within:ring-[var(--forest-500)] focus-within:border-transparent transition cursor-text"
+              className="w-full bg-white border border-gray-300 rounded-lg shadow-sm flex flex-wrap items-center gap-2 pl-4 pr-14 py-3 min-h-[58px] focus-within:ring-2 focus-within:ring-[var(--forest-500)] focus-within:border-transparent transition cursor-text relative"
               onClick={() => {
                 const inputEl = document.getElementById('center-search-input');
                 inputEl?.focus();
@@ -176,7 +191,7 @@ export const Home = () => {
                     e.stopPropagation();
                     setSelectedProducts([]);
                   }}
-                  className="text-xs font-bold text-gray-400 hover:text-red-500 transition px-2 select-none"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400 hover:text-red-500 transition px-2 select-none py-1"
                 >
                   Clear
                 </button>

@@ -45,18 +45,18 @@ export const ListingPage = () => {
   const [publishing, setPublishing] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
-  // Search state for header - initialized with the product name
-  const [query, setQuery] = useState(firstProduct?.name || '');
-  const [debouncedQuery, setDebouncedQuery] = useState(firstProduct?.name || '');
+  // Search state for header - initialized as empty
+  const [query, setQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
   const [showResults, setShowResults] = useState(false);
 
-  // Sync query when first product changes, but only if the dropdown is NOT open!
+  // Clear query text when the dropdown is closed
   useEffect(() => {
-    if (firstProduct && !showResults) {
-      setQuery(firstProduct.name);
-      setDebouncedQuery(firstProduct.name);
+    if (!showResults) {
+      setQuery('');
+      setDebouncedQuery('');
     }
-  }, [firstProduct, showResults]);
+  }, [showResults]);
 
   // Debounce the query to prevent aggressive API calling
   useEffect(() => {
