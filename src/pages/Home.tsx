@@ -5,7 +5,6 @@ import { Button } from '@/components/common/Button';
 
 import { TemplateSelector } from '@/components/common/TemplateSelector';
 import { useProductsQuery } from '@/hooks/useProductsQuery';
-import { mockProducts } from '@/data/mockData';
 import type { Product } from '@/types';
 
 export const Home = () => {
@@ -79,9 +78,14 @@ export const Home = () => {
   }, [showHeaderResults]);
 
   const results = useMemo(() => {
-    if (query.trim().length === 0) return mockProducts;
+    if (query.trim().length === 0) return [];
     return centerProducts;
   }, [query, centerProducts]);
+
+  const filteredHeaderProducts = useMemo(() => {
+    if (headerQuery.trim().length === 0) return [];
+    return headerProducts;
+  }, [headerQuery, headerProducts]);
 
   const handleToggleProduct = (p: Product) => {
     if (p.id === '__clear_all__') {
@@ -120,7 +124,7 @@ export const Home = () => {
           setHeaderQuery(val);
           setShowHeaderResults(true);
         }}
-        results={headerProducts}
+        results={filteredHeaderProducts}
         showResults={showHeaderResults}
         onSelect={handleToggleProduct}
         onFocus={() => setShowHeaderResults(true)}

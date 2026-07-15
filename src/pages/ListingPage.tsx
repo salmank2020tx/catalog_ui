@@ -123,7 +123,7 @@ export const ListingPage = () => {
   };
 
   const searchResults = useMemo(() => {
-    if (query.trim().length === 0) return mockProducts;
+    if (query.trim().length === 0) return [];
     return searchProducts;
   }, [query, searchProducts]);
 
